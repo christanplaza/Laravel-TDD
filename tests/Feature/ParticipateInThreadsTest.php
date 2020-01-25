@@ -3,10 +3,9 @@
 namespace Tests\Feature;
 
 use Tests\TestCase;
-use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 
-class ParticipateInForumTest extends TestCase
+class ParticipateInThreadsTest extends TestCase
 {
     use DatabaseMigrations;
 
@@ -15,11 +14,11 @@ class ParticipateInForumTest extends TestCase
      */
     function an_authenticated_user_may_participate_in_forum_threads()
     {
-        $this->actingAs(create('App\User'));
+        $this->signIn();
 
         $thread = create('App\Thread');
-
         $reply = make('App\Reply');
+
         $this->post($thread->path() . '/replies', $reply->toArray());
 
         $this->get($thread->path())
@@ -34,5 +33,19 @@ class ParticipateInForumTest extends TestCase
         $this->withExceptionHandling()
                 ->post('/threads/some-channel/1/replies', [])
                 ->assertRedirect('/login');
+    }
+
+    /**
+     * @test
+     */
+    function a_reply_requires_a_body()
+    {
+        $this->withExceptionHandling()->signIn();
+
+        $thread = create('App\Thread');
+        $reply = make('App\Reply', ['body' => null]);
+
+        $this->post($thread->path() . '/replies', $reply->toArray())
+                ->assertSessionHasErrors('body');
     }
 }
